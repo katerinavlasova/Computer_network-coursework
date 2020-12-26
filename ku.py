@@ -162,11 +162,83 @@ def show_disks():
     text = ''.join(text)
     inserter(text)
 
-def show_stat():
-	print('hh')
+def show_netinterface():
+    af_map = {
+    socket.AF_INET: 'IPv4',
+    socket.AF_INET6: 'IPv6',
+    psutil.AF_LINK: 'MAC',
+    }
+
+    duplex_map = {
+    psutil.NIC_DUPLEX_FULL: "full",
+    psutil.NIC_DUPLEX_HALF: "half",
+    psutil.NIC_DUPLEX_UNKNOWN: "?",
+    }
+    
+    f = open('f.txt', 'w')
+    stats = psutil.net_if_stats()
+    io_counters = psutil.net_io_counters(pernic=True)
+    for nic, addrs in psutil.net_if_addrs().items():
+        print("%s:" % (nic))
+        f.write("%s:" % (nic))
+        f.write('\n')
+        if nic in stats:
+            st = stats[nic]
+            print("    stats          : ", end='')
+            f.write("    stats          : ")
+            print("speed=%sMB, duplex=%s, mtu=%s, up=%s" % (
+                st.speed, duplex_map[st.duplex], st.mtu,
+                "yes" if st.isup else "no"))
+            f.write("speed=%sMB, duplex=%s, mtu=%s, up=%s" % (
+                st.speed, duplex_map[st.duplex], st.mtu,
+                "yes" if st.isup else "no"))
+            f.write('\n')
+        if nic in io_counters:
+            io = io_counters[nic]
+            print("    incoming       : ", end='')
+            f.write("    incoming       : ")
+            print("bytes=%s, pkts=%s, errs=%s, drops=%s" % (
+                bytes2human(io.bytes_recv), io.packets_recv, io.errin,
+                io.dropin))
+            f.write("bytes=%s, pkts=%s, errs=%s, drops=%s" % (
+                bytes2human(io.bytes_recv), io.packets_recv, io.errin,
+                io.dropin))
+            f.write('\n')
+            print("    outgoing       : ", end='')
+            f.write("    outgoing       : ")
+            print("bytes=%s, pkts=%s, errs=%s, drops=%s" % (
+                bytes2human(io.bytes_sent), io.packets_sent, io.errout,
+                io.dropout))
+            f.write("bytes=%s, pkts=%s, errs=%s, drops=%s" % (
+                bytes2human(io.bytes_sent), io.packets_sent, io.errout,
+                io.dropout))
+            f.write('\n')
+        for addr in addrs:
+            print("    %-4s" % af_map.get(addr.family, addr.family), end="")
+            f.write("    %-4s" % af_map.get(addr.family, addr.family))
+            print(" address   : %s" % addr.address)
+            f.write(" address   : %s" % addr.address)
+            f.write('\n')
+            if addr.broadcast:
+                print("         broadcast : %s" % addr.broadcast)
+                f.write("         broadcast : %s" % addr.broadcast)
+                f.write('\n')
+            if addr.netmask:
+                print("         netmask   : %s" % addr.netmask)
+                f.write("         netmask   : %s" % addr.netmask)
+                f.write('\n')
+            if addr.ptp:
+                print("      p2p       : %s" % addr.ptp)
+                f.write("      p2p       : %s" % addr.ptp)
+                f.write('\n')
+        print("")
+        f.write("\n")
+    f.close()
+    text = open('f.txt', encoding='utf-8').readlines()
+    text = ''.join(text)
+    inserter(text)
 
 
-#nettop
 
 window = tk.Tk()
 window.geometry('800x600')
@@ -177,7 +249,7 @@ window.config(menu=mainmenu)
 domenu = tk.Menu(mainmenu, tearoff=0)
 domenu.add_command(label="Активные подключения", command = show_connections)
 domenu.add_command(label="Информация о памяти", command = info_memory)
-domenu.add_command(label="Сетевая статистика", command = show_stat)
+domenu.add_command(label="Сетев interface", command = show_netinterface)
 domenu.add_command(label="Монтированные диски", command = show_disks)
 domenu.add_command(label="Активные пользователи", command = show_users)
 domenu.add_separator()
