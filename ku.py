@@ -2,7 +2,12 @@
 
 import tkinter as tk
 from tkinter import messagebox  
-
+import time
+import sys
+try:
+    import curses
+except ImportError:
+    sys.exit('platform not supported')
 import socket
 from socket import AF_INET, SOCK_STREAM, SOCK_DGRAM
 import psutil
@@ -108,9 +113,24 @@ def pprint_ntuple(nt):
     text = ''.join(text)
     inserter(text)
 
+def info_memory():
+    f = open('f.txt', 'w')
+    f.write('MEMORY\n------')
+    f.close()
+    print('MEMORY\n------')
+    pprint_ntuple(psutil.virtual_memory())
+    f = open('f.txt', 'a')
+    f.write('\nSWAP\n----')
+    f.close()
+    print('\n\nSWAP\n----')
+    pprint_ntuple(psutil.swap_memory())
+
 def show_disks():
+    f = open('f.txt', 'w')
     templ = "%-17s %8s %8s %8s %5s%% %9s  %s"
     print(templ % ("Device", "Total", "Used", "Free", "Use ", "Type",
+                   "Mount"))
+    f.write(templ % ("Device", "Total", "Used", "Free", "Use ", "Type",
                    "Mount"))
     for part in psutil.disk_partitions(all=False):
         if os.name == 'nt':
@@ -128,18 +148,25 @@ def show_disks():
             int(usage.percent),
             part.fstype,
             part.mountpoint))
+        f.write('\n')
+        f.write(templ % (
+            part.device,
+            bytes2human(usage.total),
+            bytes2human(usage.used),
+            bytes2human(usage.free),
+            int(usage.percent),
+            part.fstype,
+            part.mountpoint))
+    f.close()
+    text = open('f.txt', encoding='utf-8').readlines()
+    text = ''.join(text)
+    inserter(text)
 
-def info_memory():
-    f = open('f.txt', 'w')
-    f.write('MEMORY\n------')
-    f.close()
-    print('MEMORY\n------')
-    pprint_ntuple(psutil.virtual_memory())
-    f = open('f.txt', 'a')
-    f.write('\nSWAP\n----')
-    f.close()
-    print('\n\nSWAP\n----')
-    pprint_ntuple(psutil.swap_memory())
+def show_stat():
+	print('hh')
+
+
+#nettop
 
 window = tk.Tk()
 window.geometry('800x600')
@@ -150,7 +177,7 @@ window.config(menu=mainmenu)
 domenu = tk.Menu(mainmenu, tearoff=0)
 domenu.add_command(label="Активные подключения", command = show_connections)
 domenu.add_command(label="Информация о памяти", command = info_memory)
-domenu.add_command(label="Сетевая статистика")
+domenu.add_command(label="Сетевая статистика", command = show_stat)
 domenu.add_command(label="Монтированные диски", command = show_disks)
 domenu.add_command(label="Активные пользователи", command = show_users)
 domenu.add_separator()
